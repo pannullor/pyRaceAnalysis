@@ -1,2 +1,2 @@
 # pyRaceAnalysis
-collect race data to analyze and discover trends, make strategy, predict outcomes and more.
+There is no api for racing reference but this client provides an api to gather race and driver data. 
