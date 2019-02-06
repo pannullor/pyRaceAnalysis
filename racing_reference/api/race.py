@@ -1,6 +1,4 @@
-from pyRaceAnalysis.scraper import Scraper
-
-import copy
+from racing_reference.scraper import Scraper
 
 
 class Race(Scraper):
@@ -14,6 +12,8 @@ class Race(Scraper):
         self.year = year
         self.name = name
         self.results = []
+
+        self.url = '{}/race/{}_{}/W'.format(self.domain, self.year, self.name.replace(' ', '_'))
 
         # save the race page to reuse
         self.page = self.fetch_page(self.url)
@@ -50,10 +50,6 @@ class Race(Scraper):
             }
 
             self.results.append(result)
-
-    @property
-    def url(self):
-        return '{}/race/{}_{}/W'.format(self.domain, self.year, self.name.replace(' ', '_'))
 
     @property
     def winner(self):
