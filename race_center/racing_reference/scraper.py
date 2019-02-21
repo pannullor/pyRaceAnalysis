@@ -15,6 +15,7 @@ class Scraper(object):
     def fetch_page(self, relative_url, query_params=None):
         url = "{}{}".format(self.domain, relative_url)
 
+        print(url)
         if query_params:
             r = requests.get(url, params=query_params)
         else:
@@ -38,7 +39,7 @@ class Scraper(object):
 
         table = page.find_all('table')[index]
 
-        df = pd.read_html(str(table))
+        df = pd.read_html(str(table))[0]
 
         return df
 

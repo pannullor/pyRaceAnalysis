@@ -38,7 +38,7 @@ class Driver(Scraper):
         # get the info table
         df = self.get_table(self.page, 4)
 
-        text = df[0][0]
+        text = df[0]
 
         if info.lower() == 'home':
             end = text.lower().find('glossary') - 1
@@ -103,7 +103,7 @@ class Driver(Scraper):
         return table
 
     # get a drivers career stats at any track
-    def get_track(self, track):
+    def track_history(self, track):
         """
         fetch the drivers career statistics for
         any track the driver has driven at.
@@ -139,4 +139,5 @@ class Driver(Scraper):
 
         # finally the dataframe of the driver track history
         df = self.get_table(track_history_page, 4)
-        print(df)
+
+        return df
