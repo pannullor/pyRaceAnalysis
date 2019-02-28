@@ -1,5 +1,7 @@
 from racing_reference.scraper import Scraper
 
+from nameparser import HumanName
+
 import datetime
 from dateutil import relativedelta
 
@@ -11,16 +13,15 @@ class Driver(Scraper):
         self.name = name
 
         # the active driver page
-        self.page = self.fetch_page("/driver/{}".format(self.name.replace(' ', '_')))
+        self.page = self.fetch_page(F"/driver/{self.name.replace(' ', '_')}")
 
         # the drivers name is used in driver data
         # urls for pages about the driver. The name
         # is used in the URL as the first 5 of the
         # last name and first two of the first name
-        split = self.name.split()
-        fname = split[0]
-        lname = split[1]
-        self.driver_key = "{}{}01".format(lname[:5], fname[0:2]).lower()
+        parsed_name = HumanName(self.name)
+        key = '02' if parsed_name.suffix else '01'
+        self.driver_key = F"{parsed_name.last_name[:5]}{parsed_name.first_name[0:2]}{key}".lower()
 
     def driver_info(self, info):
         """
@@ -83,7 +84,13 @@ class Driver(Scraper):
         df = self.get_table(self.page, 7)
 
         # fill the rank NaN with their average career rank
-        df['Rank'] = df['Rank'].fillna(df['Rank'].mean()).astype(int)
+        # if they don't have a rank, it's probably because
+        # they didn't run enough races to qualify so just
+        # leave it as is.
+        try:
+            df['Rank'] = df['Rank'].fillna(df['Rank'].mean()).astype(int)
+        except:
+            pass
 
         # return the dataframe
         return df
@@ -92,7 +99,7 @@ class Driver(Scraper):
     def get_season(self, year):
         # build the url to the season stats sheet
 
-        stats_url = "/drivdet/{}/{}/W".format(self.driver_key, year)
+        stats_url = F"/drivdet/{self.driver_key}/{year}/W"
 
         # fetch the page to scrape.
         stats_page = self.fetch_page(stats_url)
@@ -117,7 +124,7 @@ class Driver(Scraper):
         # the track page contains a link to
         # viewing all cup drivers at the track,
         # that needs to be extracted.
-        track_page = self.fetch_page("/tracks/{}".format(track_key))
+        track_page = self.fetch_page(F"/tracks/{track_key}")
 
         # the table containing the link
         table = track_page.find_all('table')[6]

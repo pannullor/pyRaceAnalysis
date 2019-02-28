@@ -14,7 +14,7 @@ class Race(Scraper):
         self.year = year
         self.name = name
 
-        self.url = '/race/{}_{}/W'.format(self.year, self.name.replace(' ', '_'))
+        self.url = F"/race/{self.year}_{self.name.replace(' ', '_')}/W"
 
         # save the race page to reuse
         self.page = self.fetch_page(self.url)
@@ -39,7 +39,7 @@ class Race(Scraper):
         # the value for both rows in just a string so
         # concatenating them will make pulling the
         # particular info out easier.
-        stats_str = "{} {}".format(stats.iloc[0][0], stats.iloc[0][1])
+        stats_str = F"{stats.iloc[0][0]} {stats.iloc[0][1]}"
 
         # split on the Capital letters that follow whitespace,
         # this will make each bit of info it's own element. It
@@ -103,7 +103,7 @@ class Race(Scraper):
         # they're every odd index after.
         flag = flag.lower()
         if flag not in['green', 'yellow']:
-            raise NameError('Flag {} is not valid. Must be either \'green\' or \'yellow.\'')
+            raise NameError(F"Flag {flag} is not valid. Must be either \'green\' or \'yellow.\'")
 
         index = 2 if flag == 'green' else 3
 

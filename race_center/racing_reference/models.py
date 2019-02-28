@@ -56,7 +56,7 @@ class StateChoice(Enum):
     WY = 'Wyoming'
 
 
-class Track(models.model):
+class Track(models.Model):
     # name of the race
     name = models.CharField(max_length=200)
 
@@ -67,8 +67,6 @@ class Track(models.model):
     # length in miles
     length = models.FloatField()
 
-    # date of first race
-    first_race = models.DateField()
     last_race = models.DateField()
 
     TrackTypeChoices = (
@@ -77,17 +75,21 @@ class Track(models.model):
         (3, 'Intermediate'),
         (4, 'Short Track')
     )
-    type = models.IntegerFIeld(TrackTypeChoices)
+    type = models.IntegerField(TrackTypeChoices)
 
-class Race(models.model):
+
+class Race(models.Model):
     # name of the race
     name = models.CharField(max_length=200)
 
     # track race occurred at
-    track = models.ForeignKey('Track', related_name='races')
+    track = models.ForeignKey('Track', related_name='races', on_delete=models.CASCADE)
 
-    # race length in miles
+    # race length in miles.
     distance = models.IntegerField()
+
+    # distance of each individual lap
+    lap_distance = models.FloatField()
 
     # race length in time
     length = models.TimeField()
@@ -95,55 +97,54 @@ class Race(models.model):
     # date of race
     date = models.DateField()
 
-    # race time of day
-    race_start = models.TimeField()
-
     # total caution laps
     caution_laps = models.IntegerField(default=0)
 
     # total number of cautions
     caution_flags = models.IntegerField(default=0)
 
+    # total lead changes
+    lead_changes = models.IntegerField(default=0)
+
     # surface of the track
     SurfaceChoices = (
-        (1, 'Paved'),
-        (2, 'Road'),
-        (3, 'Dirt')
+        ('P', 'Paved'),
+        ('R', 'Road'),
+        ('D', 'Dirt')
     )
     surface = models.IntegerField(choices=SurfaceChoices)
 
-    # lap length
-    lap_length = models.FloatField()
 
+class Driver(models.Model):
+    name = models.CharField(max_length=100)
 
-class Driver(models.model):
-    name = models.CharField(max_length=200)
+    date_born = models.DateField()
 
-    birth_date = models.DateField()
-
-    home_city = models.CharFIeld()
-    home_state = models.IntegerField(choices=[(tag, tag.value) for tag in StateChoice])
+    home = models.CharField(max_length=100)
 
     career_starts = models.IntegerField(default=0)
     career_wins = models.IntegerField(default=0)
 
 
-class RaceResult(models.model):
-    race = models.ForeignKey('Race')
-    driver = models.ForeignKey('Driver', related_name='drivers')
+class RaceResult(models.Model):
+    race = models.ForeignKey('Race', on_delete=models.CASCADE)
+    driver = models.ForeignKey('Driver', related_name='drivers', on_delete=models.CASCADE)
 
     starting_position = models.IntegerField()
     finishing_position = models.IntegerField()
 
     sponsor = models.CharField(max_length=100)
-    owner = models.ForeignKey('Owner')
+    owner = models.ForeignKey('Owner', on_delete=models.CASCADE)
 
     CarChoices = (
         (1, 'Ford'),
         (2, 'Chevrolet'),
         (3, 'Toyota'),
         (4, 'Dodge'),
-        (5, 'Pontiac')
+        (5, 'Pontiac'),
+        (6, 'Plymouth'),
+        (7, 'Mercury'),
+        (8, 'Oldsmobile')
     )
     car = models.IntegerField(choices=CarChoices)
 
@@ -159,5 +160,5 @@ class RaceResult(models.model):
     status = models.CharField
 
 
-class Owner(models.model):
-    name = models.CharField(max_lenght=100)
+class Owner(models.Model):
+    name = models.CharField(max_length=100)
