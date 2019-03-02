@@ -85,8 +85,19 @@ class Race(models.Model):
     # track race occurred at
     track = models.ForeignKey('Track', related_name='races', on_delete=models.CASCADE)
 
-    # race length in miles.
+    # race length in miles. This is how far
+    # they actually ran; shortened, scheduled,
+    # or extended
     distance = models.IntegerField()
+
+    # the race scheduled distance
+    scheduled_distance = models.FloatField()
+
+    # the number of laps run.
+    laps_run = models.IntegerField()
+
+    # the scheduled amount of laps to run
+    scheduled_laps = models.IntegerField
 
     # distance of each individual lap
     lap_distance = models.FloatField()
@@ -158,6 +169,21 @@ class RaceResult(models.Model):
 
     )
     status = models.CharField
+
+
+class Leader(models.Model):
+    from_lap = models.IntegerField()
+    to_lap = models.IntegerField()
+    driver = models.ForeignKey('Driver', related_name='laps_lead', on_delete=models.CASCADE)
+    race = models.ForeignKey('race', related_name='leaders', on_delete=models.CASCADE)
+
+
+class Caution(models.Model):
+    from_lap = models.IntegerField()
+    to_lap = models.IntegerField()
+    reason = models.CharField(max_length=100)
+    free_pass = models.IntegerField()
+    race = models.ForeignKey('race', related_name='cautions', on_delete=models.CASCADE)
 
 
 class Owner(models.Model):

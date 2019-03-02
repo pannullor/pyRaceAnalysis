@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 
+import re
 import pandas as pd
 
 
@@ -55,15 +56,22 @@ class Scraper(object):
 
         rows = page.find_all('div', {'class': 'table-row'})
 
+        # regex that will be used to pull out the
+        # year and race name from the URL
+        race_re = re.compile(r'/(\d{4})_(.*)/W$')
+
         races = []
         for row in rows:
             # url to the race page
             race_url = row.find('div', {'class': 'race-number'}).find('a').get('href')
 
-            # sounds a bit silly, but since fetch_page expects
-            # just the relative url we'll pull the race name
-            # out since that's all that's needed.
-            race_name = race_url[race_url.find(year)+5:-2].replace('_', ' ')
+            # can pull the year and race name portion out of
+            # the full URL. with the match split, the year and name
+            # portion are the second element in the list,
+            # just split those and the name can be extracted.
+            match = race_re.search(race_url).group().split('/')[1].split('_')
+            del match[0]
+            race_name = ' '.join(match)
 
             # need to pull the race track name out next
             race_track = row.find('div', {'class': 'track'}).find('a').get('href')
@@ -72,7 +80,7 @@ class Scraper(object):
             # next we can build the dictionary that will
             # become our dataframe.
             races.append({
-                'race': race_name,
+                'name': race_name,
                 'date': row.find('div', {'class': 'date'}).text,
                 'cars': row.find('div', {'class': 'cars'}).text,
                 'track': race_track,

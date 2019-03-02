@@ -23,31 +23,39 @@ class Command(BaseCommand):
         # Base scraper object
         s = Scraper()
 
-        season = s.get_season('2004')
-        #
-        # # next step is to go through and create
-        # # each race for that season.
-        # races = season['races'].tolist()
+        current_year = datetime.datetime.now().year
+        for year in range(1972, current_year):
 
-        for race in season.itertuples():
-            # create a racing reference race
-            # scraper to data not available
-            # in the season race data
-            rr = rr_race(race.name)
+            season = s.get_season(year)
+            #
+            # # next step is to go through and create
+            # # each race for that season.
+            # races = season['races'].tolist()
 
-            # build race data
-            race_data = {
-                'name': race.name,
-                'track': race.track,
-                'date': race.date,
-                'lap_distance': race.lap_distance,
-                'distance': race.distance,
-                'surface': race.surface,
-                'caution_flags': race.cautions,
-                'caution_laps': race.caution_laps,
-                'lead_changes': race.lead_changes,
-                'length': rr.race_length
-            }
+            for race in season.itertuples():
+                # create a racing reference race
+                # scraper to data not available
+                # in the season race data
+                rr = rr_race(year, race.name)
+
+                # build race data
+                race_data = {
+                    'name': race.name,
+                    'track': race.track,
+                    'date': race.date,
+                    'distance': race.distance,
+                    'scheduled_distance': rr.scheduled_distance,
+                    'laps_run': rr.laps_run,
+                    'scheduled_laps': rr.scheduled_laps,
+                    'lap_distance': race.lap_distance,
+                    'surface': race.surface,
+                    'caution_flags': race.cautions,
+                    'caution_laps': race.caution_laps,
+                    'lead_changes': race.lead_changes,
+                    'length': rr.length,
+                }
+
+                print(race_data)
 
         # # get the active driver list to populate.
         # active_driver_page = s.fetch_page('/active_drivers')
@@ -55,7 +63,7 @@ class Command(BaseCommand):
         #
         # # if a driver drives in cup just replace any other
         # # series key with cup since we're specifically working
-        # # with the cup sereies here
+        # # with the cup series here
         # def find_cup(value):
         #     if value.find('Cup') > -1:
         #         return 'Cup'

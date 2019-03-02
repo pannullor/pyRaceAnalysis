@@ -19,13 +19,25 @@ class Race(Scraper):
         # save the race page to reuse
         self.page = self.fetch_page(self.url)
 
-        # 6th table down is results on
-        # the race page
+        # race results
         self.results = self.get_table(self.page, 6)
 
-    @property
-    def winner(self):
-        return self.results.iloc[0]
+    def race_details(self):
+        """
+        method to get the race details like
+        scheduled distance, laps, track type.
+        :return:
+        """
+
+        # get the raw page text so we can hit
+        # it with the distance regex to get
+        # the races scheduled distance and laps
+        raw_text = self.page.text
+
+        # the regex we can use to pull out the info
+        distance_re = re.compile(r'(\d+) laps\*? on a (\d?\.\d{3}) mile (.*) \((\d+\.\d+) miles\)', re.IGNORECASE)
+        match = distance_re.search(raw_text)
+        return match
 
     def race_info(self):
         """
@@ -41,54 +53,85 @@ class Race(Scraper):
         # particular info out easier.
         stats_str = F"{stats.iloc[0][0]} {stats.iloc[0][1]}"
 
-        # split on the Capital letters that follow whitespace,
-        # this will make each bit of info it's own element. It
-        # this will also remove the first letter of each metric
-        # but that's fine. the individual methods to pull the
-        # data from this list will account for that.
-        return re.split(' [A-Z]', stats_str)
+        return stats_str
 
-    def caution_info(self, info='total'):
+    def speed_info(self):
         """
-        get the total number of cautions in this race
+        regex uses to capture the average speed,
+        the pole speed, and the margin of victory.
         :return:
         """
-
         stats = self.race_info()
 
-        # caution info is the 3rd element if this changes
-        # we'll come up with a more clever method. Split
-        # that on the whitespace now and we can get the
-        # total cautions and lap counts from the 1st and
-        # 3rd elements respectively
-        cautions = stats[3].split()
+        speed_re = re.compile(r': (\d{1,3}\.\d{2,3})', re.IGNORECASE)
+        result = speed_re.findall(stats)
+        return result
 
-        # normalize info to all lower to check it
-        info = info.lower()
+    def caution_info(self):
+        stats = self.race_info()
+        cautions_re = re.compile(r'\d{1,3} for \d{1,3} laps', re.IGNORECASE)
+        match = cautions_re.search(stats)
+        return match.group().split()
 
-        if info == 'total':
-            return cautions[1]
-        elif info == 'laps':
-            return cautions[3]
-        else:
-            raise Exception("Invalid caution info. Valid values are total or laps.")
+    @property
+    def winner(self):
+        return self.results.iloc[0]
+
+    @property
+    def laps_run(self):
+        return self.results.iloc[0]['Laps']
 
     @property
     def total_cautions(self):
-        return self.caution_info('total')
+        return self.caution_info()[0]
 
     @property
     def total_caution_laps(self):
-        return self.caution_info('laps')
+        return self.caution_info()[2]
 
     @property
-    def race_length(self):
+    def average_speed(self):
+        return F"{self.speed_info()[0]} MPH"
+
+    @property
+    def pole_speed(self):
+        return F"{self.speed_info()[1]} MPH"
+
+    @property
+    def margin_of_victory(self):
+        return F"{self.speed_info()[2]} Sec"
+
+    @property
+    def scheduled_laps(self):
+        return self.race_details()[1]
+
+    @property
+    def lap_distance(self):
+        return self.race_details()[2]
+
+    @property
+    def track_type(self):
+        return self.race_details()[3]
+
+    @property
+    def scheduled_distance(self):
+        return self.race_details()[4]
+
+    @property
+    def length(self):
         stats = self.race_info()
 
-        # race length is the 0th element.
-        # split that again and take the
-        # 1st element.
-        return stats[0].split(': ')[1]
+        time_re = re.compile(r'Time of race: ([01]?\d|2[0-3]):([0-5]?\d):([0-5]?\d)')
+        result = time_re.search(stats)
+        return result[0].split(': ')[1]
+
+    @property
+    def lead_changes(self):
+        stats = self.race_info()
+
+        lead_re = re.compile(r'(Lead changes:) (\d{1,3})', re.IGNORECASE)
+        match = lead_re.search(stats)
+        return match.group().split(': ')[1]
 
     def flag_breakdown(self, flag='green'):
         """
