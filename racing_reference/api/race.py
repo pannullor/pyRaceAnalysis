@@ -133,6 +133,28 @@ class Race(Scraper):
         match = lead_re.search(stats)
         return match.group().split(': ')[1]
 
+    @property
+    def leaders(self):
+        """
+        every driver who led at least 1 lap.
+        Racing Reference doesn't capture mid
+        lap lead changes, instead they only
+        capture leader at the line.
+        :return:
+        """
+        lap_leaders = self.lap_leader_breakdown()
+        return set(lap_leaders['Leader'])
+
+    def lap_leader_breakdown(self):
+        leader_table = self.get_table(self.page, 11)
+
+        # set the column headers here
+        leader_table.columns = ['Leader', 'From', 'To', 'Number']
+
+        # the first rows aren't actually necessary as they
+        # don't contain any driver information.
+        return leader_table.iloc[2:].reset_index(drop=True)
+
     def flag_breakdown(self, flag='green'):
         """
         breakdown of green and yellow flag laps
@@ -155,3 +177,34 @@ class Race(Scraper):
         df = flag_table.iloc[index:-1:2]
 
         return df
+
+    def stage_finishers(self):
+        """
+        the top 10 finishers in each stage. Stages were
+        were introduced to the Cup series in 2016.
+        :param stage:
+        :return:
+        """
+
+        if self.year < 2017:
+            return ("No stage racing prior to 2017.")
+
+        raw_text = self.page.find_all('table')[5].find('td').text
+        stage_re = re.compile(r'(\d{1,2},\s)+(\d{1,2})', re.IGNORECASE)
+
+        # search will return the results of stage one, we can use
+        # the span of the match to create a substring to search for
+        # stage two.
+        stage_1 = stage_re.search(raw_text)
+        raw_text_sub = raw_text[stage_1.span()[1]:]
+        stage_2 = stage_re.search(raw_text_sub)
+
+        # with the 2 match objects return the matching strings.
+        stage_data = {
+            'stage-1': stage_1.group(),
+            'stage-2': stage_2.group()
+        }
+
+        return stage_data
+
+
