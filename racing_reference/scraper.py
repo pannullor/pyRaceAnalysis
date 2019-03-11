@@ -92,7 +92,7 @@ class Scraper(object):
                 'distance': row.find('div', {'class': 'miles'}).text,
                 'pole_speed': row.find('div', {'class': 'pole'}).text,
                 'cautions': row.find('div', {'class': 'cautions'}).text,
-                'caution_laps': row.find('div', {'class': 'laps'}).text,
+                'caution_laps': row.find_all('div', {'class': 'laps'})[1].text,
                 'average_speed': row.find('div', {'class': 'speed'}).text,
                 'lead_changes': row.find('div', {'class': 'lc'}).text
             })

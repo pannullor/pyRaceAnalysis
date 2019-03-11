@@ -145,6 +145,28 @@ class Race(Scraper):
         lap_leaders = self.lap_leader_breakdown()
         return set(lap_leaders['Leader'])
 
+    @property
+    def location(self):
+        """
+        simple method to get the track location
+        :return:
+        """
+        raw_text = self.page.text
+
+        location_re = re.compile(r'([\w\s]+),\s(\w{2,})$', re.MULTILINE)
+
+        match = location_re.search(raw_text)
+        return match.group()
+
+    @property
+    def race_date(self):
+        raw_text = self.page.text
+
+        date_re = re.compile(r'^(\w+),\s(\w+\s\d{1,2}),\s(\d{4})', re.MULTILINE)
+
+        match = date_re.search(raw_text)
+        return match.group()
+
     def lap_leader_breakdown(self):
         leader_table = self.get_table(self.page, 11)
 
