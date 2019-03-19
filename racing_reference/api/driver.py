@@ -5,6 +5,8 @@ from nameparser import HumanName
 import datetime
 from dateutil import relativedelta
 
+import re
+
 
 # class to describe a driver
 class Driver(Scraper):
@@ -12,8 +14,11 @@ class Driver(Scraper):
     def __init__(self, name):
         self.name = name
 
-        # the active driver page
-        self.page = self.fetch_page(F"/driver/{self.name.replace(' ', '_')}")
+        # strip any periods or commas from names so we
+        # successfully look up the active driver page.
+        name_re = re.compile(r'[.,]')
+        formatted_name = name_re.sub(' ', self.name).strip().replace('  ', ' ').replace(' ', '_')
+        self.page = self.fetch_page(F"/driver/{formatted_name}")
 
         # the drivers name is used in driver data
         # urls for pages about the driver. The name
@@ -21,7 +26,7 @@ class Driver(Scraper):
         # last name and first two of the first name
         parsed_name = HumanName(self.name)
         key = '02' if parsed_name.suffix else '01'
-        self.driver_key = F"{parsed_name.last_name[:5]}{parsed_name.first_name[0:2]}{key}".lower()
+        self.driver_key = F"{parsed_name.last[:5]}{parsed_name.first[0:2]}{key}".lower()
 
     def driver_info(self, info):
         """
@@ -39,21 +44,32 @@ class Driver(Scraper):
         # get the info table
         df = self.get_table(self.page, 4)
 
-        text = df[0]
+        text = df[0][0]
 
         if info.lower() == 'home':
-            end = text.lower().find('glossary') - 1
-        elif info.lower() == 'born':
-            end = text.lower().find('home') - 1
+            home_re = re.compile(r'Home: ([\w\s]+),\s(\w){2}')
+            match = home_re.search(text)
+            if match:
+                home = match.group()
+                return home[home.find(':')+2:]
 
-        # starting point is the string we can use to
-        # determine where the info bit is at
-        start = text.lower().find(info.lower())
+        if info.lower() == 'born':
+            birthday_re = re.compile(r'Born: (\w+)\s(\d){1,2},\s(\d){4}')
+            match = birthday_re.search(text)
+            if match:
+                birthday = match.group()
+                return datetime.datetime.strptime(f"{birthday[birthday.find(':')+2:]}",
+                                                  "%B %d, %Y")
 
-        # the information is the substring from start
-        # to the next line break.
-        extracted = text[start:end].replace(info, '').strip(": ")
-        return extracted
+        if info.lower() == 'died':
+            died_re = re.compile(r'Died: (\w+)\s(\d){1,2},\s(\d){4}')
+            match = died_re.search(text)
+            if match:
+                match_group = match.group()
+                return datetime.datetime.strptime(f"{match_group[match_group.find(':')+2:]}",
+                                                  "%B %d, %Y")
+
+        return None
 
     @property
     def hometown(self):

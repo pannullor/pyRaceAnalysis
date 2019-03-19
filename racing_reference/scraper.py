@@ -30,7 +30,7 @@ class Scraper(object):
             raise Exception(F"Error with fetching url {r.url} -- status code {r.status_code} ")
 
     @staticmethod
-    def get_table(page, index):
+    def get_table(page, index=None, match='.+'):
         """
         return the HTML at the specified index as
         a pandas dataframe
@@ -38,8 +38,16 @@ class Scraper(object):
         :return: table as dataframe
         """
 
-        table = page.find_all('table')[index]
-        df = pd.read_html(str(table))[0]
+        try:
+            if index:
+                table = page.find_all('table')[index]
+                df = pd.read_html(str(table))[0]
+            else:
+                # no index provided, return the tables
+                # found using a match.
+                df = pd.read_html(str(page), match=match)
+        except Exception as e:
+            df = None
 
         return df
 
@@ -62,8 +70,14 @@ class Scraper(object):
 
         races = []
         for row in rows:
-            # url to the race page
-            race_url = row.find('div', {'class': 'race-number'}).find('a').get('href')
+
+            # url to the race page. If we can't find a URL then
+            # the race hasn't happened yet so that's our season.
+            race_url = row.find('div', {'class': 'race-number'}).find('a')
+            if race_url:
+                race_url = race_url.get('href')
+            else:
+                break
 
             # can pull the year and race name portion out of
             # the full URL. with the match split, the year and name

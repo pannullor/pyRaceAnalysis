@@ -67,11 +67,15 @@ class Race(Scraper):
         result = speed_re.findall(stats)
         return result
 
-    def caution_info(self):
+    def caution_info(self, info='total'):
         stats = self.race_info()
         cautions_re = re.compile(r'\d{1,3} for \d{1,3} laps', re.IGNORECASE)
         match = cautions_re.search(stats)
-        return match.group().split()
+        if match:
+            index = 0 if info.lower() == 'total' else 2
+            value = match.group().split()[index]
+        else:
+            value = 0
 
     @property
     def winner(self):
@@ -83,11 +87,11 @@ class Race(Scraper):
 
     @property
     def total_cautions(self):
-        return self.caution_info()[0]
+        return self.caution_info('total')
 
     @property
     def total_caution_laps(self):
-        return self.caution_info()[2]
+        return self.caution_info('laps')
 
     @property
     def average_speed(self):
@@ -123,7 +127,9 @@ class Race(Scraper):
 
         time_re = re.compile(r'Time of race: ([01]?\d|2[0-3]):([0-5]?\d):([0-5]?\d)')
         result = time_re.search(stats)
-        return result[0].split(': ')[1]
+        if result:
+            return result[0].split(': ')[1]
+        return None
 
     @property
     def lead_changes(self):
@@ -131,7 +137,9 @@ class Race(Scraper):
 
         lead_re = re.compile(r'(Lead changes:) (\d{1,3})', re.IGNORECASE)
         match = lead_re.search(stats)
-        return match.group().split(': ')[1]
+        if match:
+            return match.group().split(': ')[1]
+        return None
 
     @property
     def leaders(self):
@@ -168,7 +176,7 @@ class Race(Scraper):
         return match.group()
 
     def lap_leader_breakdown(self):
-        leader_table = self.get_table(self.page, 11)
+        leader_table = self.get_table(self.page, match='Lap leader breakdown:')[1]
 
         # set the column headers here
         leader_table.columns = ['Leader', 'From', 'To', 'Number']
@@ -183,22 +191,31 @@ class Race(Scraper):
         :param flag: the flag to breakdown, default is green
         :return: dataframe of flag breakdown
         """
-        flag_table = self.get_table(self.page, 10)
+        flag_table = self.get_table(self.page, match='Caution flag breakdown:')
 
-        # green flags start at index 2 and they're
-        # every even index, yellow starts at 3 and
-        # they're every odd index after.
-        flag = flag.lower()
-        if flag not in['green', 'yellow']:
-            raise NameError(F"Flag {flag} is not valid. Must be either \'green\' or \'yellow.\'")
+        if flag_table:
+            flag_table = flag_table[1]
+            # green flags start at index 2 and they're
+            # every even index, yellow starts at 3 and
+            # they're every odd index after.
+            flag = flag.lower()
+            if flag not in['green', 'yellow']:
+                raise NameError(F"Flag {flag} is not valid. Must be either \'green\' or \'yellow.\'")
 
-        index = 2 if flag == 'green' else 3
+            index = 2 if flag == 'green' else 3
 
-        # slice the dataframe from the index by 2 leaving
-        # off the last row.
-        df = flag_table.iloc[index:-1:2]
+            # drop the flag column as it's
+            # not needed.
+            flag_table.drop(flag_table.columns[0], axis=1, inplace=True)
 
-        return df
+            # add friendly headers
+            flag_table.columns = ['from_lap', 'to_lap', 'number', 'reason', 'free_pass']
+
+            # slice the dataframe from the index by 2 leaving
+            # off the last row.
+            return flag_table.iloc[index:-1:2]
+
+        return None
 
     def stage_finishers(self):
         """
