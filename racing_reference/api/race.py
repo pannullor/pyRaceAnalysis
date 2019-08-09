@@ -204,16 +204,27 @@ class Race(Scraper):
 
             index = 2 if flag == 'green' else 3
 
-            # drop the flag column as it's
-            # not needed.
-            flag_table.drop(flag_table.columns[0], axis=1, inplace=True)
+            # drop the flag column. If we're looking
+            # at green flag laps, the reason and free
+            # pass aren't necessary either.
+            drop_columns = [0]
+            if flag == 'green':
+                drop_columns += [4, 5]
+            flag_table.drop(flag_table.columns[drop_columns], axis=1, inplace=True)
 
             # add friendly headers
-            flag_table.columns = ['from_lap', 'to_lap', 'number', 'reason', 'free_pass']
+            columns = ['from_lap', 'to_lap', 'number']
+            if flag == 'yellow':
+                columns += ['reason', 'free_pass']
+            flag_table.columns = columns
 
             # slice the dataframe from the index by 2 leaving
             # off the last row.
-            return flag_table.iloc[index:-1:2]
+            return flag_table.iloc[index:-1:2].astype({
+                'from_lap': 'int64',
+                'to_lap': 'int64',
+                'number': 'int64'
+            })
 
         return None
 
